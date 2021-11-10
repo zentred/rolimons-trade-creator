@@ -1,4 +1,6 @@
-this requires userid, _RoliVerification and _RoliData
+this requires userid, _RoliVerification and _RoliData, and python 3.8.5 (is what i have)
+
+type into cmd 'pip install requests' for this to work
 
 in order to get your _RoliVerification and _RoliData, follow these steps
 
