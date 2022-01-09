@@ -38,16 +38,15 @@ for x in config:
             print('\nError occured.\nMy side: {check_m} items\nTheir side: {check_t} items+tags\n\nIf any of these values are above 4, please read the information provided in config and fix the config')
 
 while True:
-    headers = {
-        'accept': 'application/json, text/javascript, */*; q=0.01',
-        'origin': 'https://www.rolimons.com',
-        'referer': 'https://www.rolimons.com/tradeadcreate',
-        'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/95.0.4638.69 Safari/537.36 Edg/95.0.1020.44',
-        }
     for payload in payloads:
-        r = req.post('https://www.rolimons.com/tradeapi/create', headers=headers, json=payload)
-        if r.json()['success'] == True:
-            sent += 1
-        else:
-            failed += 1
+        while True:
+            r = req.post('https://www.rolimons.com/tradeapi/create', json=payload)
+            if r.json()['success'] == True:
+                sent += 1
+                break
+            else:
+                print(f'{r.text}')
+                failed += 1
+                time.sleep(20)
+                break
         time.sleep(905)
