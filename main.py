@@ -1,19 +1,47 @@
-import requests, time, configparser, json, threading, ctypes
+import requests, time, configparser, json, threading, ctypes, random, colorama, os
+from colorama import init, Fore
 from threading import Thread
-req = requests.Session()
+init()
 
-payloads = []
-failed = 0
 sent = 0
+failed = 0
+lock = threading.Lock()
+os.system('cls')
 
-config = configparser.ConfigParser()
-config.read('config.ini')
+class Player:
+    def __init__(self, config):
+        self.userId = config['userId']
+        self.roliVerification = config['roliVerification']
+        self.roliData = config['roliData']
+        self.myAssets = []
+        self.currSend = []
+        Thread(target=self.overall).start()
 
-userid = int(config['info']['UserID'])
-roliverification = config['info']['RoliVerification']
-rolidata = config['info']['RoliData']
-req.cookies['_RoliVerification'] = roliverification
-req.cookies['_RoliData'] = rolidata
+    def highest(self):
+        totalLimiteds = requests.get(f'https://inventory.roblox.com/v1/users/{self.userId}/assets/collectibles?sortOrder=Asc&limit=100&cursor=').json()['data']
+        self.myAssets = [limited['assetId'] for limited in totalLimiteds]
+        random.shuffle(self.myAssets)
+        if len(self.myAssets) >= 4:
+            self.currSend = [self.myAssets[i] for i in range(4)]
+        else:
+            self.currSend = self.myAssets
+        self.send()
+
+    def send(self):
+        global sent, failed
+        json = {"player_id":self.userId,"offer_item_ids":self.currSend,"request_item_ids":[],"request_tags":["any","demand","upgrade","rap"]}
+        r = requests.post('https://www.rolimons.com/tradeapi/create', json=json, cookies={'_RoliVerification': self.roliVerification, '_RoliData': self.roliData})
+        if r.json()['success'] == True:
+            with lock: print(f'{Fore.WHITE}[{Fore.GREEN}CREATED{Fore.WHITE}] {self.userId} created a trade ad')
+            sent += 1
+        else:
+            with lock: print(f'{Fore.WHITE}[{Fore.GREEN}FAILED{Fore.WHITE}] {self.userId} was unable to create a trade ad')
+            failed += 1
+
+    def overall(self):
+        while True:
+            self.highest()
+            time.sleep(915)
 
 def title():
     while True:
@@ -21,32 +49,9 @@ def title():
 
 Thread(target=title).start()
 
-for x in config:
-    if 'trade' in x:
-        for z in config[x]:
-            if 'my_side' in z:
-                my_side = json.loads(config[x][z])
-            elif 'their_items' in z:
-                their_items = json.loads(config[x][z])
-            elif 'their_tags' in z:
-                their_tags = json.loads(config[x][z])
-        check_m = len(my_side)
-        check_t = len(their_items) + len(their_tags)
-        if check_m <= 4 and check_t <= 4:
-            payloads.append({"player_id":userid,"offer_item_ids":my_side,"request_item_ids":their_items,"request_tags":their_tags})
-        else:
-            print('\nError occured.\nMy side: {check_m} items\nTheir side: {check_t} items+tags\n\nIf any of these values are above 4, please read the information provided in config and fix the config')
-
-while True:
-    for payload in payloads:
-        while True:
-            r = req.post('https://www.rolimons.com/tradeapi/create', json=payload)
-            if r.json()['success'] == True:
-                sent += 1
-                break
-            else:
-                print(f'{r.text}')
-                failed += 1
-                time.sleep(20)
-                break
-        time.sleep(905)
+for root, dirs, files in os.walk("."):
+    for filename in files:
+        if 'config' in filename:
+            with open(f'{filename}','r') as config:
+                config = json.load(config)
+            c = Player(config)
