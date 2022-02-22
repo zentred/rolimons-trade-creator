@@ -22,13 +22,16 @@ class Player:
         self.myAssets = [limited['assetId'] for limited in totalLimiteds]
         random.shuffle(self.myAssets)
         if len(self.myAssets) >= 4:
-            self.currSend = [self.myAssets[i] for i in range(4)]
+            self.currSend.clear()
+            for i in range(4):
+                self.currSend.append(self.myAssets[i])
         else:
             self.currSend = self.myAssets
         self.send()
 
     def send(self):
         global sent, failed
+        with lock: print(f'{Fore.WHITE}[{Fore.LIGHTBLUE_EX}SENDING{Fore.WHITE}] {self.userId} is about to send {str(self.currSend)}')
         json = {"player_id":self.userId,"offer_item_ids":self.currSend,"request_item_ids":[],"request_tags":["any","demand","upgrade","rap"]}
         r = requests.post('https://www.rolimons.com/tradeapi/create', json=json, cookies={'_RoliVerification': self.roliVerification, '_RoliData': self.roliData})
         if r.json()['success'] == True:
@@ -38,10 +41,11 @@ class Player:
             with lock: print(f'{Fore.WHITE}[{Fore.GREEN}FAILED{Fore.WHITE}] {self.userId} was unable to create a trade ad')
             failed += 1
 
+
     def overall(self):
         while True:
             self.highest()
-            time.sleep(915)
+            time.sleep(905)
 
 def title():
     while True:
